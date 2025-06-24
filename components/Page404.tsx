@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 import type * as types from '@/lib/types'
 
 import { PageHead } from './PageHead'
@@ -30,6 +32,10 @@ export function Page404({ site, pageId, error }: types.PageProps) {
             alt='404 Not Found'
             className={styles.errorImage}
           />
+
+          <p>
+            <Link href='/'>Return home</Link>
+          </p>
         </main>
       </div>
     </>
