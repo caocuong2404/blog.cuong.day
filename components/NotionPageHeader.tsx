@@ -23,12 +23,14 @@ function ToggleThemeButton() {
   }, [toggleDarkMode])
 
   return (
-    <div
+    <button
+      type='button'
       className={cs('breadcrumb', 'button', !hasMounted && styles.hidden)}
       onClick={onToggleTheme}
+      aria-label='Toggle dark mode'
     >
       {hasMounted && isDarkMode ? <IoMoonSharp /> : <IoSunnyOutline />}
-    </div>
+    </button>
   )
 }
 
