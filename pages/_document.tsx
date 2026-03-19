@@ -1,11 +1,13 @@
 import { IconContext } from '@react-icons/all-files'
 import Document, { Head, Html, Main, NextScript } from 'next/document'
 
+import { language } from '@/lib/config'
+
 export default class MyDocument extends Document {
   override render() {
     return (
       <IconContext.Provider value={{ style: { verticalAlign: 'middle' } }}>
-        <Html lang='en'>
+        <Html lang={language}>
           <Head>
             <link rel='shortcut icon' href='/favicon.ico' />
             <link
