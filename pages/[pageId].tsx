@@ -13,7 +13,7 @@ export const getStaticProps: GetStaticProps<PageProps, Params> = async (
   try {
     const props = await resolveNotionPage(domain, rawPageId)
 
-    return { props, revalidate: 10 }
+    return { props, revalidate: 300 }
   } catch (err) {
     console.error('page error', domain, rawPageId, err)
 
@@ -25,7 +25,7 @@ export const getStaticProps: GetStaticProps<PageProps, Params> = async (
 
 // No pages prerendered at build time — all built on-demand via ISR.
 // This avoids Notion API 429 rate limits during builds entirely.
-// Pages are cached after first visit (revalidate: 10s above).
+// Pages are cached after first visit (revalidate: 5min above).
 export async function getStaticPaths() {
   return {
     paths: [],
