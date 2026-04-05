@@ -1,5 +1,5 @@
 {
-  "regions": ["hnd1"],
+  "regions": ["sin1"],
   "functions": {
     "pages/**/*.tsx": {
       "maxDuration": 60
