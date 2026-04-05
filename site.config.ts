@@ -60,9 +60,9 @@ export default siteConfig({
   // whether to use the default notion navigation style or a custom one with links to
   // important pages. To use `navigationLinks`, set `navigationStyle` to `custom`.
   navigationStyle:
-    (process.env.NAVIGATION_STYLE as NavigationStyle) || 'default', // or 'custom'
-  navigationLinks: process.env.NAVIGATION_LINKS
-    ? (JSON.parse(process.env.NAVIGATION_LINKS) as NavigationLink[])
+    (process.env.NEXT_PUBLIC_NAVIGATION_STYLE as NavigationStyle) || 'default', // or 'custom'
+  navigationLinks: process.env.NEXT_PUBLIC_NAVIGATION_LINKS
+    ? (JSON.parse(process.env.NEXT_PUBLIC_NAVIGATION_LINKS) as NavigationLink[])
     : []
   // navigationLinks: [
   //   {

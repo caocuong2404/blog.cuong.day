@@ -1,0 +1,53 @@
+name: Daily Digest
+
+on:
+  schedule:
+    # Run daily at 01:00 UTC (08:00 Vietnam time), after agents-radar finishes (~00:25 UTC)
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Override date (YYYY-MM-DD). Leave empty for today.'
+        required: false
+
+jobs:
+  digest:
+    name: Generate Daily Digest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # wrangler is needed for R2 cover image uploads
+      - run: pnpm add -g wrangler
+
+      - name: Run digest pipeline
+        env:
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          COVER_IMAGE_BASE_URL: ${{ secrets.COVER_IMAGE_BASE_URL }}
+          COVER_IMAGE_API_KEY: ${{ secrets.COVER_IMAGE_API_KEY }}
+          COVER_IMAGE_MODEL: ${{ secrets.COVER_IMAGE_MODEL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          DATE="${{ github.event.inputs.date }}"
+          if [ -z "$DATE" ]; then
+            DATE=$(date -u +%Y-%m-%d)
+          fi
+          echo "📅 Generating digest for $DATE"
+          npx tsx lib/smart-digest/main.ts "$DATE"
