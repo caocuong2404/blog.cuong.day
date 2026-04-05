@@ -1,8 +1,3 @@
 {
-  "regions": ["sin1"],
-  "functions": {
-    "pages/**/*.tsx": {
-      "maxDuration": 60
-    }
-  }
+  "regions": ["sin1"]
 }
