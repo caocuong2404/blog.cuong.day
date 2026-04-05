@@ -1,3 +1,8 @@
 {
-  "regions": ["hnd1"]
+  "regions": ["hnd1"],
+  "functions": {
+    "pages/**/*.tsx": {
+      "maxDuration": 60
+    }
+  }
 }
