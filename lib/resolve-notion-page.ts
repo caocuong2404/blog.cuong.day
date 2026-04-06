@@ -42,7 +42,7 @@ export async function resolveNotionPage(
       recordMap = await getPage(pageId)
     } else {
       // L2: Direct DB query for databases with Slug property (1 Notion API call)
-      pageId = await resolveSlugDirect(rawPageId)
+      pageId = (await resolveSlugDirect(rawPageId)) ?? undefined
 
       // L3: KV sitemap / static fallback / full crawl
       if (!pageId) {

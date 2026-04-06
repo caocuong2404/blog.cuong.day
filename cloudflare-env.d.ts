@@ -21,3 +21,19 @@ declare namespace NodeJS {
     Pick<Cloudflare.Env, 'NEXTJS_ENV'>
   > {}
 }
+
+// Cloudflare Workers types (can't use @cloudflare/workers-types globally — conflicts with DOM types)
+interface CacheStorage {
+  readonly default: Cache
+}
+
+interface KVNamespace {
+  get(key: string, type?: string): Promise<string | null>
+  get(key: string, type: 'json'): Promise<any>
+  put(
+    key: string,
+    value: string,
+    options?: { expirationTtl?: number }
+  ): Promise<void>
+  delete(key: string): Promise<void>
+}

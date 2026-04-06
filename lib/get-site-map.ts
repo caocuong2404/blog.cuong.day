@@ -141,7 +141,7 @@ export async function getSiteMap(): Promise<types.SiteMap> {
     config.rootNotionPageId,
     config.rootNotionSpaceId ?? undefined
   )
-  await kvPut(partialSiteMap.canonicalPageMap)
+  await kvPut(partialSiteMap.canonicalPageMap!)
   console.log('getSiteMap: wrote canonicalPageMap to KV')
 
   return { site: config.site, ...partialSiteMap } as types.SiteMap
