@@ -18,9 +18,9 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   res.setHeader('Cache-Control', 'public, max-age=86400, immutable')
   res.setHeader('Content-Type', 'text/plain')
 
-  // Disable SEO if DISABLE_SEO env var is set, or if not production
-  const disableSeo = process.env.DISABLE_SEO === 'true' || process.env.VERCEL_ENV !== 'production'
-  
+  // Disable SEO if DISABLE_SEO env var is set
+  const disableSeo = process.env.DISABLE_SEO === 'true'
+
   if (disableSeo) {
     res.write(`User-agent: *
 Disallow: /

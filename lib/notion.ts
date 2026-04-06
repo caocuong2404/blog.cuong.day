@@ -3,25 +3,21 @@ import {
   type SearchParams,
   type SearchResults
 } from 'notion-types'
-import { getBlockValue } from 'notion-utils'
-import pMemoize from 'p-memoize'
+import { getBlockValue, getPageProperty } from 'notion-utils'
 
-import {
-  isPreviewImageSupportEnabled,
-  rootNotionPageId
-} from './config'
+import { isPreviewImageSupportEnabled, rootNotionPageId } from './config'
 
 // Limit the daily digest gallery on the homepage to N most recent posts
 const digestDatabaseId = process.env.DIGEST_DATABASE_ID || ''
 const digestCollectionLimit = 4
 import { getTweetsMap } from './get-tweets'
 import { notion } from './notion-api'
-import { getPreviewImageMap } from './preview-images'
 
 export async function getPage(pageId: string): Promise<ExtendedRecordMap> {
   let recordMap = await notion.getPage(pageId)
 
   if (isPreviewImageSupportEnabled) {
+    const { getPreviewImageMap } = await import('./preview-images')
     const previewImageMap = await getPreviewImageMap(recordMap)
     ;(recordMap as any).preview_images = previewImageMap
   }
@@ -100,12 +96,31 @@ export async function search(params: SearchParams): Promise<SearchResults> {
 
 /**
  * Limits the daily digest collection to show only the most recent N posts.
- * Matches the collection by checking if its parent_id corresponds to the
- * digest database page ID.
+ * Sorts by Published date → Last edited → Created time (all descending).
  */
 function limitDigestCollection(recordMap: ExtendedRecordMap): void {
   const collectionQuery = recordMap.collection_query
   if (!collectionQuery) return
+
+  const sortBlockIds = (blockIds: string[]): string[] => {
+    return blockIds.sort((a, b) => {
+      const blockA = getBlockValue(recordMap.block[a])
+      const blockB = getBlockValue(recordMap.block[b])
+      if (!blockA || !blockB) return 0
+
+      const pubA = getPageProperty<number>('Published', blockA, recordMap) || 0
+      const pubB = getPageProperty<number>('Published', blockB, recordMap) || 0
+      if (pubA !== pubB) return pubB - pubA
+
+      const editA = blockA.last_edited_time || 0
+      const editB = blockB.last_edited_time || 0
+      if (editA !== editB) return editB - editA
+
+      const createA = blockA.created_time || 0
+      const createB = blockB.created_time || 0
+      return createB - createA
+    })
+  }
 
   for (const collectionId of Object.keys(collectionQuery)) {
     const collection = getBlockValue(recordMap.collection?.[collectionId])
@@ -120,11 +135,15 @@ function limitDigestCollection(recordMap: ExtendedRecordMap): void {
       if (!data) continue
 
       if (data.blockIds) {
-        data.blockIds = data.blockIds.slice(0, digestCollectionLimit)
+        data.blockIds = sortBlockIds(data.blockIds).slice(
+          0,
+          digestCollectionLimit
+        )
       }
       if (data.collection_group_results?.blockIds) {
-        data.collection_group_results.blockIds =
-          data.collection_group_results.blockIds.slice(0, digestCollectionLimit)
+        data.collection_group_results.blockIds = sortBlockIds(
+          data.collection_group_results.blockIds
+        ).slice(0, digestCollectionLimit)
       }
     }
   }

@@ -5,7 +5,7 @@
 
 export function getAuthPageHTML(siteName: string): string {
   const title = siteName.toUpperCase()
-  
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>

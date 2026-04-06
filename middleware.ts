@@ -11,20 +11,22 @@ export function middleware(request: NextRequest) {
   }
 
   const authCookie = request.cookies.get('site-auth')
-  
+
   if (authCookie?.value === sitePassword) {
     return NextResponse.next()
   }
 
   const url = request.nextUrl
-  
+
   if (url.pathname === '/api/auth') {
     return NextResponse.next()
   }
 
-  if (url.pathname.startsWith('/_next') || 
-      url.pathname.startsWith('/static') ||
-      url.pathname.includes('.')) {
+  if (
+    url.pathname.startsWith('/_next') ||
+    url.pathname.startsWith('/static') ||
+    url.pathname.includes('.')
+  ) {
     return NextResponse.next()
   }
 
@@ -42,16 +44,13 @@ export function middleware(request: NextRequest) {
 
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Commander Workspace'
 
-  return new NextResponse(
-    getAuthPageHTML(siteName),
-    {
-      status: 401,
-      headers: {
-        'Content-Type': 'text/html',
-        'X-Robots-Tag': 'noindex, nofollow'
-      }
+  return new NextResponse(getAuthPageHTML(siteName), {
+    status: 401,
+    headers: {
+      'Content-Type': 'text/html',
+      'X-Robots-Tag': 'noindex, nofollow'
     }
-  )
+  })
 }
 
 export const config = {

@@ -13,9 +13,15 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
-    "deploy": "vercel deploy",
+    "seed-sitemap": "tsx --env-file=.env scripts/seed-sitemap-kv.ts",
+    "deploy": "pnpm seed-sitemap && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "preview": "pnpm seed-sitemap && opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "upload": "pnpm seed-sitemap && opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts --include-runtime=false",
+    "digest": "tsx --env-file=.env lib/smart-digest/main.ts",
+    "digest:stats": "tsx --env-file=.env lib/smart-digest/stats.ts",
     "deps:upgrade": "[ -z $GITHUB_ACTIONS ] && pnpm up -L notion-client notion-types notion-utils react-notion-x || echo 'Skipping deps:update on CI'",
     "deps:link": "[ -z $GITHUB_ACTIONS ] && run-s deps:link:* || echo 'Skipping deps:update on CI'",
     "deps:unlink": "[ -z $GITHUB_ACTIONS ] && pnpm add notion-client notion-types notion-utils react-notion-x || echo 'Skipping deps:update on CI'",
@@ -31,6 +37,7 @@
     "@fisch0920/use-dark-mode": "^2.4.0",
     "@keyvhq/core": "^1.6.9",
     "@keyvhq/redis": "^1.6.10",
+    "@notionhq/client": "^5.16.0",
     "classnames": "^2.5.1",
     "expiry-map": "^2.0.0",
     "fathom-client": "^3.4.1",
@@ -39,6 +46,7 @@
     "lqip-modern": "^2.2.1",
     "next": "^16.2.0",
     "notion-client": "^7.10.0",
+    "notion-helper": "^1.3.30",
     "notion-types": "^7.10.0",
     "notion-utils": "^7.10.0",
     "p-map": "^7.0.4",
@@ -55,6 +63,7 @@
   },
   "devDependencies": {
     "@fisch0920/config": "^1.4.0",
+    "@opennextjs/cloudflare": "^1.18.0",
     "@types/node": "^25.5.0",
     "@types/prismjs": "^1.26.5",
     "@types/react": "^19.2.14",
@@ -63,7 +72,9 @@
     "eslint": "^9.39.2",
     "npm-run-all2": "^8.0.4",
     "prettier": "^3.8.1",
-    "typescript": "^5.9.3"
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.80.0"
   },
   "overrides": {
     "cacheable-request": {

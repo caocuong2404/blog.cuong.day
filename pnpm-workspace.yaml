@@ -1,17 +1,23 @@
 packages: []
 
-onlyBuiltDependencies:
-  - sharp
-  - simple-git-hooks
-
 enablePrePostScripts: true
 
+ignoredBuiltDependencies:
+  - canvas
+  - core-js
+  - protobufjs
+
 minimumReleaseAge: 1440
+
 minimumReleaseAgeExclude:
   - '@fisch0920/config'
   - react-notion-x
   - notion-client
   - notion-types
   - notion-utils
+
+onlyBuiltDependencies:
+  - sharp
+  - simple-git-hooks
 
 packageManagerStrict: false

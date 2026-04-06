@@ -37,20 +37,20 @@ const momoDisplay = Momo_Trust_Display({
   subsets: ['latin', 'vietnamese'],
   weight: ['400'],
   variable: '--font-display',
-  display: 'swap',
+  display: 'swap'
 })
 
 const momoSans = Momo_Trust_Sans({
   subsets: ['latin', 'vietnamese'],
   variable: '--font-sans',
-  display: 'swap',
+  display: 'swap'
 })
 
 const momoSignature = Momo_Signature({
   subsets: ['latin', 'vietnamese'],
   weight: ['400'],
   variable: '--font-signature',
-  display: 'swap',
+  display: 'swap'
 })
 
 if (!isServer) {

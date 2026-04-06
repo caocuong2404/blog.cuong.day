@@ -37,19 +37,28 @@ export function LanguageSwitcher() {
   }, [])
 
   const switchLanguage = React.useCallback((lang: string) => {
-    // Set googtrans cookie
-    document.cookie = `googtrans=/auto/${lang};path=/`
-    // Also set on domain root for Google Translate to pick up
-    document.cookie = `googtrans=/auto/${lang};path=/;domain=${window.location.hostname}`
+    const defaultLang =
+      window.__GOOGLE_TRANSLATION_CONFIG__?.defaultLanguage || 'en'
+
+    if (lang === defaultLang) {
+      // Switching back to default: remove googtrans cookie on all paths/domains
+      document.cookie = `googtrans=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT`
+      document.cookie = `googtrans=;path=/;domain=${window.location.hostname};expires=Thu, 01 Jan 1970 00:00:00 GMT`
+      document.cookie = `googtrans=;path=/;domain=.${window.location.hostname};expires=Thu, 01 Jan 1970 00:00:00 GMT`
+    } else {
+      // Set googtrans cookie for translation
+      document.cookie = `googtrans=/auto/${lang};path=/`
+      document.cookie = `googtrans=/auto/${lang};path=/;domain=${window.location.hostname}`
+      document.cookie = `googtrans=/auto/${lang};path=/;domain=.${window.location.hostname}`
+    }
     window.location.reload()
   }, [])
 
-  const languages =
-    (typeof window !== 'undefined' &&
-      window.__GOOGLE_TRANSLATION_CONFIG__?.languages) || [
-      { title: 'English', name: 'en' },
-      { title: 'Tiếng Việt', name: 'vi' }
-    ]
+  const languages = (typeof window !== 'undefined' &&
+    window.__GOOGLE_TRANSLATION_CONFIG__?.languages) || [
+    { title: 'English', name: 'en' },
+    { title: 'Tiếng Việt', name: 'vi' }
+  ]
 
   return (
     <div
