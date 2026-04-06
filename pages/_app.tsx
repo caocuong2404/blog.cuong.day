@@ -71,8 +71,9 @@ export default function App({ Component, pageProps }: AppProps) {
     }
 
     if (fathomId) {
+      const id = fathomId
       void import('fathom-client').then((Fathom) =>
-        Fathom.load(fathomId, fathomConfig)
+        Fathom.load(id, fathomConfig)
       )
     }
 
