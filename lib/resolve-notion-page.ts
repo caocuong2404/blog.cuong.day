@@ -4,7 +4,12 @@ import { parsePageId } from 'notion-utils'
 import type { PageProps } from './types'
 import * as acl from './acl'
 import { pageUrlAdditions, pageUrlOverrides, site } from './config'
-import { getSiteMap, hotCacheGet, kvAppendSlug, resolveSlugDirect } from './get-site-map'
+import {
+  getSiteMap,
+  hotCacheGet,
+  kvAppendSlug,
+  resolveSlugDirect
+} from './get-site-map'
 import { getPage } from './notion'
 
 export async function resolveNotionPage(

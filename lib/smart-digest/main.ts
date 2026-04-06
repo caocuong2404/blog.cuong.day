@@ -76,23 +76,25 @@ async function runPipeline(
   console.log(`Title: ${post.title}`)
   console.log(`Tags: ${post.tags.join(', ')}`)
 
+  // Always save digest data for CI artifact upload
+  await mkdir(OUTPUT_DIR, { recursive: true })
+  const previewPath = join(OUTPUT_DIR, `digest-${today}.json`)
+  const preview = JSON.stringify(
+    {
+      title: post.title,
+      slug: post.slug,
+      description: post.description,
+      tags: post.tags,
+      date: today,
+      blocks: JSON.parse(post.content)
+    },
+    null,
+    2
+  )
+  await writeFile(previewPath, preview, 'utf-8')
+  console.log(`\n📄 Digest saved: ${previewPath}`)
+
   if (dryRun || skipPublish) {
-    await mkdir(OUTPUT_DIR, { recursive: true })
-    const previewPath = join(OUTPUT_DIR, `digest-${today}.json`)
-    const preview = JSON.stringify(
-      {
-        title: post.title,
-        slug: post.slug,
-        description: post.description,
-        tags: post.tags,
-        date: today,
-        blocks: JSON.parse(post.content)
-      },
-      null,
-      2
-    )
-    await writeFile(previewPath, preview, 'utf-8')
-    console.log(`\n📄 Preview saved: ${previewPath}`)
     console.log(`(${dryRun ? 'dry run' : 'skip-publish'} — not published)`)
     return
   }

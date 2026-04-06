@@ -266,7 +266,8 @@ async function updateSitemapKV(
   slug: string,
   notionPageId: string
 ): Promise<void> {
-  const accountId = process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID
+  const accountId =
+    process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID
   const apiToken = process.env.CLOUDFLARE_API_TOKEN
   const kvNamespaceId = '7249cd7e8dca4af2bf19a2b5e76392a8'
   const kvKey = 'sitemap:canonicalPageMap'
@@ -307,6 +308,8 @@ async function updateSitemapKV(
       console.warn(`⚠ Sitemap KV update failed: ${putRes.status}`)
     }
   } catch (err) {
-    console.warn(`⚠ Sitemap KV update error: ${err instanceof Error ? err.message : err}`)
+    console.warn(
+      `⚠ Sitemap KV update error: ${err instanceof Error ? err.message : err}`
+    )
   }
 }

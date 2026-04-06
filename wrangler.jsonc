@@ -13,8 +13,7 @@
       "pages",
       "components",
       "lib",
-      "styles",
-      "public"
+      "styles"
     ]
   },
   "observability": {

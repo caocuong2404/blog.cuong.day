@@ -14,15 +14,15 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const DATABASES = [
-  process.env.DIGEST_DATABASE_ID
-].filter(Boolean) as string[]
+const DATABASES = [process.env.DIGEST_DATABASE_ID].filter(Boolean) as string[]
 
 const NOTION_API_KEY = process.env.NOTION_API_KEY
 
 async function queryAllPublicSlugs(): Promise<Record<string, string>> {
   if (!NOTION_API_KEY || DATABASES.length === 0) {
-    console.log('⚠ No NOTION_API_KEY or database IDs — skipping fallback generation')
+    console.log(
+      '⚠ No NOTION_API_KEY or database IDs — skipping fallback generation'
+    )
     return {}
   }
 
@@ -86,7 +86,9 @@ async function queryAllPublicSlugs(): Promise<Record<string, string>> {
     } while (cursor)
   }
 
-  console.log(`✓ Found ${Object.keys(map).length} public pages (${totalCalls} API call${totalCalls > 1 ? 's' : ''})`)
+  console.log(
+    `✓ Found ${Object.keys(map).length} public pages (${totalCalls} API call${totalCalls > 1 ? 's' : ''})`
+  )
   return map
 }
 

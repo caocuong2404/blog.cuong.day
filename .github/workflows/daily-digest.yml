@@ -23,7 +23,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -49,5 +49,30 @@ jobs:
           if [ -z "$DATE" ]; then
             DATE=$(date -u +%Y-%m-%d)
           fi
+          echo "DATE=$DATE" >> "$GITHUB_ENV"
           echo "📅 Generating digest for $DATE"
           npx tsx lib/smart-digest/main.ts "$DATE"
+
+      - name: Collect cover images
+        if: always()
+        run: |
+          mkdir -p artifacts/images
+          cp /tmp/digest-cover-*.png artifacts/images/ 2>/dev/null || true
+          cp /tmp/digest-cover-*.webp artifacts/images/ 2>/dev/null || true
+          ls -lh artifacts/images/ 2>/dev/null || echo "No cover images found"
+
+      - name: Upload extracted content
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-content-${{ env.DATE }}
+          path: lib/smart-digest/data/digest-*.json
+          if-no-files-found: ignore
+
+      - name: Upload cover images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-images-${{ env.DATE }}
+          path: artifacts/images/
+          if-no-files-found: ignore

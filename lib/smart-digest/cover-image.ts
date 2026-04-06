@@ -1,4 +1,4 @@
-import { writeFile, unlink } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { tmpdir } from 'node:os'
@@ -267,10 +267,7 @@ async function setNotionCover(
 async function optimizeImage(inputPath: string): Promise<string> {
   const outputPath = inputPath.replace(/\.\w+$/, '.webp')
   const sharp = (await import('sharp')).default
-  await sharp(inputPath)
-    .resize(1500)
-    .webp({ quality: 80 })
-    .toFile(outputPath)
+  await sharp(inputPath).resize(1500).webp({ quality: 80 }).toFile(outputPath)
   return outputPath
 }
 export async function generateAndSetCover(
@@ -309,8 +306,7 @@ export async function generateAndSetCover(
   await setNotionCover(config, pageId, publicUrl)
   console.log('  ✓ Cover set!')
 
-  await unlink(rawPath).catch(() => {})
-  await unlink(optimizedPath).catch(() => {})
+  // Keep files in tmpdir for CI artifact upload; cleaned up when runner exits
 
   return publicUrl
 }

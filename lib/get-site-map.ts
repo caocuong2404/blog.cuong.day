@@ -155,16 +155,14 @@ export async function getSiteMap(): Promise<types.SiteMap> {
  * Pages where the slug is derived from the title won't be found here —
  * those fall through to KV / static fallback / full crawl.
  */
-export async function resolveSlugDirect(
-  slug: string
-): Promise<string | null> {
+export async function resolveSlugDirect(slug: string): Promise<string | null> {
   const notionApiKey = process.env.NOTION_API_KEY
   if (!notionApiKey) return null
 
   // All databases that have a "Slug" property
-  const databaseIds = [
-    process.env.DIGEST_DATABASE_ID
-  ].filter(Boolean) as string[]
+  const databaseIds = [process.env.DIGEST_DATABASE_ID].filter(
+    Boolean
+  ) as string[]
 
   if (databaseIds.length === 0) return null
 
@@ -205,7 +203,9 @@ export async function resolveSlugDirect(
         return cleanId
       }
     } catch (err) {
-      console.warn(`getSiteMap: direct slug lookup failed for ${databaseId}: ${err}`)
+      console.warn(
+        `getSiteMap: direct slug lookup failed for ${databaseId}: ${err}`
+      )
     }
   }
 
