@@ -26,9 +26,6 @@ importers:
       expiry-map:
         specifier: ^2.0.0
         version: 2.0.0
-      fathom-client:
-        specifier: ^3.4.1
-        version: 3.7.2
       katex:
         specifier: ^0.16.28
         version: 0.16.28
@@ -2676,9 +2673,6 @@ packages:
 
   fastest-stable-stringify@2.0.2:
     resolution: {integrity: sha512-bijHueCGd0LqqNK9b5oCMHc0MluJAx0cwqASgbWMvkO01lCYgIhacVRLcaDz3QnyYIRNJRDwMb41VuT6pHJ91Q==}
-
-  fathom-client@3.7.2:
-    resolution: {integrity: sha512-sWtaNivhg7uwp/q1bUuIiNj4LeQZMEZ5NXXFFpZ8le4uDedAfQG84gPOdYehtVXbl+1yX2s8lmXZ2+IQ9a/xxA==}
 
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
@@ -7417,8 +7411,6 @@ snapshots:
       strnum: 2.2.2
 
   fastest-stable-stringify@2.0.2: {}
-
-  fathom-client@3.7.2: {}
 
   fdir@6.5.0(picomatch@4.0.3):
     optionalDependencies:

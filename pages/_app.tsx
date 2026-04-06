@@ -24,13 +24,7 @@ import { posthog } from 'posthog-js'
 import * as React from 'react'
 
 import { bootstrap } from '@/lib/bootstrap-client'
-import {
-  fathomConfig,
-  fathomId,
-  isServer,
-  posthogConfig,
-  posthogId
-} from '@/lib/config'
+import { isServer, posthogConfig, posthogId } from '@/lib/config'
 
 const momoDisplay = Momo_Trust_Display({
   subsets: ['latin', 'vietnamese'],
@@ -61,20 +55,9 @@ export default function App({ Component, pageProps }: AppProps) {
 
   React.useEffect(() => {
     function onRouteChangeComplete() {
-      if (fathomId) {
-        void import('fathom-client').then((Fathom) => Fathom.trackPageview())
-      }
-
       if (posthogId) {
         posthog.capture('$pageview')
       }
-    }
-
-    if (fathomId) {
-      const id = fathomId
-      void import('fathom-client').then((Fathom) =>
-        Fathom.load(id, fathomConfig)
-      )
     }
 
     if (posthogId) {
