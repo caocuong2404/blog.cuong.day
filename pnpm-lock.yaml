@@ -86,6 +86,9 @@ importers:
       rss:
         specifier: ^1.2.2
         version: 1.2.2
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
     devDependencies:
       '@fisch0920/config':
         specifier: ^1.4.0

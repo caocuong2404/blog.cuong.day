@@ -60,7 +60,8 @@
     "react-notion-x": "^7.10.0",
     "react-tweet": "^3.3.0",
     "react-use": "^17.6.0",
-    "rss": "^1.2.2"
+    "rss": "^1.2.2",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@fisch0920/config": "^1.4.0",
