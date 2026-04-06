@@ -17,7 +17,9 @@ minimumReleaseAgeExclude:
   - notion-utils
 
 onlyBuiltDependencies:
+  - esbuild
   - sharp
   - simple-git-hooks
+  - workerd
 
 packageManagerStrict: false
