@@ -164,6 +164,7 @@ export const fathomConfig = fathomId
   : undefined
 
 export const posthogId =
+  process.env.NEXT_PUBLIC_POSTHOG_TOKEN ||
   process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN ||
   process.env.NEXT_PUBLIC_POSTHOG_ID
 export const posthogConfig: Partial<PostHogConfig> = {
