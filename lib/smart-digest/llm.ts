@@ -72,12 +72,26 @@ export async function chatCompletion(
       model: config.llmModel,
       messages,
       temperature: options?.temperature ?? 0.7,
-      max_tokens: options?.maxTokens ?? 4096
+      max_tokens: options?.maxTokens ?? 4096,
+      stream: true
     })
   })
 
-  const data = (await res.json()) as LLMResponse
-  return data.choices[0]?.message?.content ?? ''
+  // Collect streamed SSE chunks into full content
+  const text = await res.text()
+  let content = ''
+  for (const line of text.split('\n')) {
+    if (!line.startsWith('data: ') || line === 'data: [DONE]') continue
+    try {
+      const chunk = JSON.parse(line.slice(6)) as {
+        choices?: Array<{ delta?: { content?: string } }>
+      }
+      content += chunk.choices?.[0]?.delta?.content ?? ''
+    } catch {
+      // skip malformed chunks
+    }
+  }
+  return content
 }
 
 export async function fetchModels(
