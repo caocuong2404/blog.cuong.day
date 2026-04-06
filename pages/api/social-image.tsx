@@ -169,8 +169,10 @@ export default async function OGImage(
     console.error('OG image generation failed:', err?.message || err)
     // Fallback: redirect to page cover image or return a simple error
     if (pageInfo.image) {
+      // Prefer PNG for social sharing (Facebook doesn't support WebP)
+      const socialImage = pageInfo.image.replace(/\.webp$/, '.png')
       res.setHeader('Cache-Control', 'public, max-age=3600')
-      return res.redirect(302, pageInfo.image)
+      return res.redirect(302, socialImage)
     }
     return res.status(500).json({ error: 'Failed to generate OG image' })
   }

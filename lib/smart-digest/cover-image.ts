@@ -293,14 +293,21 @@ export async function generateAndSetCover(
   console.log(`  ✓ Optimized (${(size / 1024).toFixed(0)}KB WebP)`)
 
   console.log('☁️  Uploading to R2...')
-  const key = `covers/daily-digest-${post.date}.webp`
+  const webpKey = `covers/daily-digest-${post.date}.webp`
   const publicUrl = await uploadToR2(
     coverConfig,
-    key,
+    webpKey,
     optimizedPath,
     'image/webp'
   )
   console.log(`  ✓ Uploaded: ${publicUrl}`)
+
+  // Also upload PNG for social sharing (Facebook doesn't support WebP)
+  const pngKey = `covers/daily-digest-${post.date}.png`
+  await uploadToR2(coverConfig, pngKey, rawPath, 'image/png')
+  console.log(
+    `  ✓ Uploaded PNG for social: ${coverConfig.r2PublicUrl}/${pngKey}`
+  )
 
   console.log('🖼️  Setting Notion cover...')
   await setNotionCover(config, pageId, publicUrl)
