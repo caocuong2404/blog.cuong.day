@@ -266,18 +266,13 @@ async function setNotionCover(
 
 async function optimizeImage(inputPath: string): Promise<string> {
   const outputPath = inputPath.replace(/\.\w+$/, '.webp')
-  // Resize to 1500px wide, convert to WebP quality 80
-  await execFileAsync('magick', [
-    inputPath,
-    '-resize',
-    '1500x',
-    '-quality',
-    '80',
-    outputPath
-  ])
+  const sharp = (await import('sharp')).default
+  await sharp(inputPath)
+    .resize(1500)
+    .webp({ quality: 80 })
+    .toFile(outputPath)
   return outputPath
 }
-
 export async function generateAndSetCover(
   config: DigestConfig,
   coverConfig: CoverConfig,
