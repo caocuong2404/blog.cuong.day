@@ -14,7 +14,6 @@ import 'styles/notion.css'
 import 'styles/prism-theme.css'
 
 import type { AppProps } from 'next/app'
-import * as Fathom from 'fathom-client'
 import {
   Momo_Signature,
   Momo_Trust_Display,
@@ -63,7 +62,7 @@ export default function App({ Component, pageProps }: AppProps) {
   React.useEffect(() => {
     function onRouteChangeComplete() {
       if (fathomId) {
-        Fathom.trackPageview()
+        void import('fathom-client').then((Fathom) => Fathom.trackPageview())
       }
 
       if (posthogId) {
@@ -72,7 +71,9 @@ export default function App({ Component, pageProps }: AppProps) {
     }
 
     if (fathomId) {
-      Fathom.load(fathomId, fathomConfig)
+      void import('fathom-client').then((Fathom) =>
+        Fathom.load(fathomId, fathomConfig)
+      )
     }
 
     if (posthogId) {
