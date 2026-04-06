@@ -14,9 +14,93 @@ import { notion } from './notion-api'
 const uuid = !!includeNotionIdInUrls
 
 const KV_KEY = 'sitemap:canonicalPageMap'
-const KV_TTL = 86400 // 24 hours — seeded at deploy time
+// Default: no expiry. Override via SITEMAP_KV_TTL env var (seconds).
+const KV_TTL = process.env.SITEMAP_KV_TTL
+  ? parseInt(process.env.SITEMAP_KV_TTL)
+  : undefined
 
-// Static fallback generated at build time by scripts/seed-sitemap-kv.ts
+// ── L1 hot cache (Cache API — per-colo, persists across isolates) ────────────
+
+async function cacheGet(slug: string): Promise<string | null> {
+  try {
+    const cache = caches.default
+    const cacheKey = new Request(`https://cache.internal/sitemap-slug/${slug}`)
+    const response = await cache.match(cacheKey)
+    if (response) return response.text()
+  } catch {
+    // Cache API not available (local dev)
+  }
+  return null
+}
+
+async function cacheSet(slug: string, notionPageId: string): Promise<void> {
+  try {
+    const cache = caches.default
+    const cacheKey = new Request(`https://cache.internal/sitemap-slug/${slug}`)
+    await cache.put(
+      cacheKey,
+      new Response(notionPageId, {
+        headers: { 'Cache-Control': 'public, max-age=86400' }
+      })
+    )
+  } catch {
+    // Cache API not available (local dev)
+  }
+}
+
+export { cacheGet as hotCacheGet }
+
+// ── L2 KV cache (persistent, edge-distributed) ─────────────────────────────
+
+async function getKVNamespace(): Promise<KVNamespace | null> {
+  try {
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare')
+    const { env } = await getCloudflareContext()
+    return env.SITEMAP_KV
+  } catch {
+    return null
+  }
+}
+
+async function kvGet(): Promise<types.CanonicalPageMap | null> {
+  const kv = await getKVNamespace()
+  if (!kv) return null
+  return kv.get(KV_KEY, 'json') as Promise<types.CanonicalPageMap | null>
+}
+
+async function kvPut(map: types.CanonicalPageMap): Promise<void> {
+  const kv = await getKVNamespace()
+  if (!kv) return
+  await kv.put(
+    KV_KEY,
+    JSON.stringify(map),
+    KV_TTL ? { expirationTtl: KV_TTL } : undefined
+  )
+}
+
+/**
+ * Append a single slug→pageId to both L1 hot cache and L2 KV.
+ */
+export async function kvAppendSlug(
+  slug: string,
+  notionPageId: string
+): Promise<void> {
+  // L1: update Cache API (per-colo hot cache)
+  await cacheSet(slug, notionPageId)
+
+  // L2: update KV
+  try {
+    const existing = (await kvGet()) ?? {}
+    existing[slug] = notionPageId
+    await kvPut(existing)
+    console.log(`getSiteMap: KV appended ${slug}`)
+  } catch {
+    // non-critical
+  }
+}
+
+// ── Static fallback (bundled in worker at build time) ───────────────────────
+
 async function getStaticFallback(): Promise<types.CanonicalPageMap | null> {
   try {
     const { getCloudflareContext } = await import('@opennextjs/cloudflare')
@@ -28,89 +112,110 @@ async function getStaticFallback(): Promise<types.CanonicalPageMap | null> {
       return (await res.json()) as types.CanonicalPageMap
     }
   } catch {
-    // Static fallback not available
+    // not available
   }
   return null
 }
 
-export async function getSiteMap(): Promise<types.SiteMap> {
-  // 1. Try Cloudflare KV (fastest path — seeded at deploy time)
-  try {
-    const { getCloudflareContext } = await import('@opennextjs/cloudflare')
-    const { env } = await getCloudflareContext()
-    const cached = (await env.SITEMAP_KV.get(
-      KV_KEY,
-      'json'
-    )) as types.CanonicalPageMap | null
+// ── Main getSiteMap ─────────────────────────────────────────────────────────
 
-    if (cached) {
-      console.log('getSiteMap: KV cache hit')
-      return {
-        site: config.site,
-        pageMap: {},
-        canonicalPageMap: cached
-      }
-    }
-  } catch {
-    // KV not available (local dev), fall through
+export async function getSiteMap(): Promise<types.SiteMap> {
+  // 1. KV cache (fastest — seeded at deploy or updated incrementally)
+  const cached = await kvGet()
+  if (cached) {
+    console.log('getSiteMap: KV hit')
+    return { site: config.site, pageMap: {}, canonicalPageMap: cached }
   }
 
-  // 2. Try static fallback JSON (bundled in the worker at build time)
+  // 2. Static fallback JSON (bundled in worker)
   const fallback = await getStaticFallback()
   if (fallback) {
-    console.log('getSiteMap: static fallback hit')
-
-    // Re-seed KV from the static fallback so next request uses KV directly
-    try {
-      const { getCloudflareContext } = await import('@opennextjs/cloudflare')
-      const { env } = await getCloudflareContext()
-      await env.SITEMAP_KV.put(KV_KEY, JSON.stringify(fallback), {
-        expirationTtl: KV_TTL
-      })
-      console.log('getSiteMap: re-seeded KV from static fallback')
-    } catch {
-      // KV not available, continue
-    }
-
-    return {
-      site: config.site,
-      pageMap: {},
-      canonicalPageMap: fallback
-    }
+    console.log('getSiteMap: static fallback hit, re-seeding KV')
+    await kvPut(fallback)
+    return { site: config.site, pageMap: {}, canonicalPageMap: fallback }
   }
 
-  // 3. Last resort — full Notion crawl (local dev or both caches expired)
-  console.warn(
-    'getSiteMap: KV and static fallback both missed — falling back to full Notion crawl'
-  )
+  // 3. Last resort — full Notion crawl (only on first request ever)
+  console.warn('getSiteMap: KV + fallback miss — full Notion crawl')
   const partialSiteMap = await getAllPagesImpl(
     config.rootNotionPageId,
     config.rootNotionSpaceId ?? undefined
   )
+  await kvPut(partialSiteMap.canonicalPageMap)
+  console.log('getSiteMap: wrote canonicalPageMap to KV')
 
-  // Write canonicalPageMap to KV for next request
-  try {
-    const { getCloudflareContext } = await import('@opennextjs/cloudflare')
-    const { env } = await getCloudflareContext()
-    await env.SITEMAP_KV.put(
-      KV_KEY,
-      JSON.stringify(partialSiteMap.canonicalPageMap),
-      { expirationTtl: KV_TTL }
-    )
-    console.log('getSiteMap: wrote canonicalPageMap to KV')
-  } catch {
-    // KV not available, continue without caching
+  return { site: config.site, ...partialSiteMap } as types.SiteMap
+}
+
+/**
+ * Try to resolve a single slug by querying Notion databases directly (1 API call per DB)
+ * instead of doing a full space crawl. Returns the Notion page ID or null.
+ *
+ * Only works for databases with a custom "Slug" property.
+ * Pages where the slug is derived from the title won't be found here —
+ * those fall through to KV / static fallback / full crawl.
+ */
+export async function resolveSlugDirect(
+  slug: string
+): Promise<string | null> {
+  const notionApiKey = process.env.NOTION_API_KEY
+  if (!notionApiKey) return null
+
+  // All databases that have a "Slug" property
+  const databaseIds = [
+    process.env.DIGEST_DATABASE_ID
+  ].filter(Boolean) as string[]
+
+  if (databaseIds.length === 0) return null
+
+  for (const databaseId of databaseIds) {
+    try {
+      const res = await fetch(
+        `https://api.notion.com/v1/databases/${databaseId}/query`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${notionApiKey}`,
+            'Notion-Version': '2022-06-28',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            filter: {
+              and: [
+                { property: 'Slug', rich_text: { equals: slug } },
+                { property: 'Public', checkbox: { equals: true } }
+              ]
+            },
+            page_size: 1
+          })
+        }
+      )
+
+      if (!res.ok) continue
+
+      const data = (await res.json()) as {
+        results: Array<{ id: string }>
+      }
+
+      const pageId = data.results[0]?.id
+      if (pageId) {
+        const cleanId = pageId.replace(/-/g, '')
+        console.log(`getSiteMap: direct slug lookup hit: ${slug} → ${cleanId}`)
+        await kvAppendSlug(slug, cleanId)
+        return cleanId
+      }
+    } catch (err) {
+      console.warn(`getSiteMap: direct slug lookup failed for ${databaseId}: ${err}`)
+    }
   }
 
-  return {
-    site: config.site,
-    ...partialSiteMap
-  } as types.SiteMap
+  return null
 }
+
+// ── Full Notion crawl (last resort) ─────────────────────────────────────────
 
 const getPage = async (pageId: string, ...args: any[]) => {
   console.log('\nnotion getPage', uuidToId(pageId))
-  // Retry with exponential backoff for 429 rate limits
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       return await notion.getPage(pageId, ...args)
@@ -168,8 +273,6 @@ async function getAllPagesImpl(
       })!
 
       if (map[canonicalPageId]) {
-        // you can have multiple pages in different collections that have the same id
-        // TODO: we may want to error if neither entry is a collection page
         console.warn('error duplicate canonical page id', {
           canonicalPageId,
           pageId,

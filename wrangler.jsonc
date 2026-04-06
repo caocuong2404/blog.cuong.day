@@ -8,7 +8,7 @@
     "global_fetch_strictly_public"
   ],
   "build": {
-    "command": "pnpm seed-sitemap && opennextjs-cloudflare build",
+    "command": "opennextjs-cloudflare build",
     "watch_dir": [
       "pages",
       "components",

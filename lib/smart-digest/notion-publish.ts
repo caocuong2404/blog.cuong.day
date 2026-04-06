@@ -249,5 +249,64 @@ export async function publishToNotion(
   const apiResponse = (response as any)?.apiResponse ?? response
   const pageId = apiResponse?.id as string | undefined
   console.log(`✅ Published to Notion: ${pageId}`)
+
+  // Update sitemap KV with the new slug → pageId mapping
+  if (pageId) {
+    await updateSitemapKV(post.slug, pageId.replace(/-/g, ''))
+  }
+
   return pageId ?? ''
+}
+
+/**
+ * Incrementally update the sitemap KV entry with a new slug.
+ * This avoids a full Notion crawl just to add one page to the sitemap.
+ */
+async function updateSitemapKV(
+  slug: string,
+  notionPageId: string
+): Promise<void> {
+  const accountId = process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN
+  const kvNamespaceId = '7249cd7e8dca4af2bf19a2b5e76392a8'
+  const kvKey = 'sitemap:canonicalPageMap'
+
+  if (!accountId || !apiToken) {
+    console.log('⚠ No Cloudflare credentials — skipping sitemap KV update')
+    return
+  }
+
+  try {
+    // Read current sitemap from KV
+    const getRes = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${kvNamespaceId}/values/${kvKey}`,
+      { headers: { Authorization: `Bearer ${apiToken}` } }
+    )
+
+    let canonicalPageMap: Record<string, string> = {}
+    if (getRes.ok) {
+      canonicalPageMap = (await getRes.json()) as Record<string, string>
+    }
+
+    // Add new entry
+    canonicalPageMap[slug] = notionPageId
+
+    // Write back
+    const putRes = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${kvNamespaceId}/values/${kvKey}`,
+      {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${apiToken}` },
+        body: JSON.stringify(canonicalPageMap)
+      }
+    )
+
+    if (putRes.ok) {
+      console.log(`🗺️  Sitemap KV updated: ${slug} → ${notionPageId}`)
+    } else {
+      console.warn(`⚠ Sitemap KV update failed: ${putRes.status}`)
+    }
+  } catch (err) {
+    console.warn(`⚠ Sitemap KV update error: ${err instanceof Error ? err.message : err}`)
+  }
 }

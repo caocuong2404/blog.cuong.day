@@ -13,7 +13,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "pnpm seed-sitemap && opennextjs-cloudflare build",
+    "build": "tsx scripts/generate-sitemap-fallback.ts; opennextjs-cloudflare build",
     "start": "next start",
     "seed-sitemap": "tsx --env-file=.env scripts/seed-sitemap-kv.ts",
     "deploy": "pnpm seed-sitemap && opennextjs-cloudflare build && opennextjs-cloudflare deploy",

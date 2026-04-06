@@ -47,6 +47,3 @@ yarn-error.log*
 docs/plans/
 
 lib/smart-digest/data/
-
-# build-time generated sitemap fallback
-public/sitemap-fallback.json
