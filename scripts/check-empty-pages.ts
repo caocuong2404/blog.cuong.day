@@ -49,13 +49,13 @@ async function main() {
         ? `❌ ONLY ${blockCount} blocks`
         : `✅ ${blockCount}+ blocks`
 
-    console.log(`${date}  ${page.id}  ${flag}  ${title.substring(0, 60)}`)
+    console.log(`${date}  ${page.id}  ${flag}  ${title.slice(0, 60)}`)
 
     // Show detail for suspicious pages (0 or 1 block)
     if (blockCount <= 1 && title.includes('Digest')) {
       for (const b of blocks.results || []) {
         console.log(
-          `   → ${b.type}: ${JSON.stringify(b[b.type]?.rich_text?.[0]?.plain_text || b[b.type]?.caption || '').substring(0, 120)}`
+          `   → ${b.type}: ${JSON.stringify(b[b.type]?.rich_text?.[0]?.plain_text || b[b.type]?.caption || '').slice(0, 120)}`
         )
       }
     }

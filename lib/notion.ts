@@ -6,15 +6,15 @@ import {
 import { getBlockValue, getPageProperty } from 'notion-utils'
 
 import { isPreviewImageSupportEnabled, rootNotionPageId } from './config'
+import { getTweetsMap } from './get-tweets'
+import { notion } from './notion-api'
 
 // Limit the daily digest gallery on the homepage to N most recent posts
 const digestDatabaseId = process.env.DIGEST_DATABASE_ID || ''
 const digestCollectionLimit = 4
-import { getTweetsMap } from './get-tweets'
-import { notion } from './notion-api'
 
 export async function getPage(pageId: string): Promise<ExtendedRecordMap> {
-  let recordMap = await notion.getPage(pageId)
+  const recordMap = await notion.getPage(pageId)
 
   if (isPreviewImageSupportEnabled) {
     const { getPreviewImageMap } = await import('./preview-images')

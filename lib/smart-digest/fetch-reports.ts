@@ -23,7 +23,7 @@ export async function fetchReports(date?: string): Promise<FetchedReport[]> {
   const manifest = await fetchManifest()
   const sortedDates = manifest.dates.map((d) => d.date).sort()
 
-  const targetDate = date ?? sortedDates[sortedDates.length - 1]!
+  const targetDate = date ?? sortedDates.at(-1)!
   const entry = manifest.dates.find((d) => d.date === targetDate)
 
   if (!entry) {

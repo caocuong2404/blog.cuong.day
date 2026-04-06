@@ -19,9 +19,9 @@ import {
   uuidToId
 } from 'notion-utils'
 
+import * as config from '../lib/config'
 import { getCanonicalPageId } from '../lib/get-canonical-page-id'
 import { notion } from '../lib/notion-api'
-import * as config from '../lib/config'
 
 // Always generate slugs without Notion IDs (production mode)
 const uuid = false

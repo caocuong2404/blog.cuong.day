@@ -1,15 +1,15 @@
-import { writeFile, mkdir } from 'node:fs/promises'
-import { join, dirname } from 'node:path'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import type { DigestConfig } from './types.js'
 import { loadConfig } from './config.js'
 import { generateAndSetCover, loadCoverConfig } from './cover-image.js'
 import { extractEntities } from './extract.js'
 import { fetchReports } from './fetch-reports.js'
-import { deduplicateEntities } from './novelty.js'
 import { findExistingPublicPage, publishToNotion } from './notion-publish.js'
+import { deduplicateEntities } from './novelty.js'
 import { generatePost } from './writer.js'
-import type { DigestConfig } from './types.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const OUTPUT_DIR = join(__dirname, 'data')
