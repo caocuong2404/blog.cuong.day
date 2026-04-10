@@ -48,6 +48,11 @@
   "images": {
     "binding": "IMAGES"
   },
+  "vars": {
+    "NEXT_PUBLIC_SOCIAL_TWITTER": "caocuong2404",
+    "NEXT_PUBLIC_SOCIAL_GITHUB": "caocuong2404",
+    "NEXT_PUBLIC_SOCIAL_LINKEDIN": "caocuong2404"
+  },
   "routes": [
     {
       "pattern": "blog.cuong.day",

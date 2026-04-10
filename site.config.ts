@@ -23,9 +23,9 @@ export default siteConfig({
     'Example Next.js Notion Starter Kit Site',
 
   // social usernames (optional)
-  twitter: process.env.NEXT_PUBLIC_SOCIAL_TWITTER || 'transitive_bs',
-  github: process.env.NEXT_PUBLIC_SOCIAL_GITHUB || 'transitive-bullshit',
-  linkedin: process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN || 'fisch2',
+  twitter: process.env.NEXT_PUBLIC_SOCIAL_TWITTER || 'caocuong2404',
+  github: process.env.NEXT_PUBLIC_SOCIAL_GITHUB || 'caocuong2404',
+  linkedin: process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN || 'caocuong2404',
   // mastodon: '#', // optional mastodon profile URL, provides link verification
   // newsletter: '#', // optional newsletter URL
   youtube: process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE || '#', // optional youtube channel name or `channel/UCGbXXXXXXXXXXXXXXXXXXXXXX`
