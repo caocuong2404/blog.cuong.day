@@ -60,7 +60,15 @@ export async function extractEntities(
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
         .trim()
-      const raw = JSON.parse(cleaned)
+      let raw: unknown
+      try {
+        raw = JSON.parse(cleaned)
+      } catch {
+        console.warn(
+          `  ⚠ ${report.name}: truncated/invalid JSON from LLM, skipping`
+        )
+        return { entities: [], report }
+      }
       const entities = validateEntities(raw)
       console.log(`  ✓ ${report.name}: ${entities.length} entities`)
       return { entities, report }
