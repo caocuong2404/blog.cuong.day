@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process'
+
 import { Client } from '@notionhq/client'
 import { createNotionBuilder, createPage } from 'notion-helper'
 
@@ -260,53 +262,42 @@ export async function publishToNotion(
 
 /**
  * Incrementally update the sitemap KV entry with a new slug.
- * This avoids a full Notion crawl just to add one page to the sitemap.
+ * Uses wrangler CLI (already installed in CI) to avoid raw REST API token scope issues.
  */
 async function updateSitemapKV(
   slug: string,
   notionPageId: string
 ): Promise<void> {
-  const accountId =
-    process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN
   const kvNamespaceId = '7249cd7e8dca4af2bf19a2b5e76392a8'
   const kvKey = 'sitemap:canonicalPageMap'
+  const accountId =
+    process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID
 
-  if (!accountId || !apiToken) {
-    console.log('⚠ No Cloudflare credentials — skipping sitemap KV update')
+  if (!accountId) {
+    console.log('⚠ No Cloudflare account ID — skipping sitemap KV update')
     return
   }
 
   try {
-    // Read current sitemap from KV
-    const getRes = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${kvNamespaceId}/values/${kvKey}`,
-      { headers: { Authorization: `Bearer ${apiToken}` } }
-    )
-
+    // Read current map via wrangler
     let canonicalPageMap: Record<string, string> = {}
-    if (getRes.ok) {
-      canonicalPageMap = (await getRes.json()) as Record<string, string>
+    try {
+      const current = execSync(
+        `wrangler kv key get --namespace-id="${kvNamespaceId}" --account-id="${accountId}" "${kvKey}"`,
+        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      ).trim()
+      if (current) canonicalPageMap = JSON.parse(current) as Record<string, string>
+    } catch {
+      // Key may not exist yet — start fresh
     }
 
-    // Add new entry
+    // Add new entry and write back
     canonicalPageMap[slug] = notionPageId
-
-    // Write back
-    const putRes = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces/${kvNamespaceId}/values/${kvKey}`,
-      {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${apiToken}` },
-        body: JSON.stringify(canonicalPageMap)
-      }
+    execSync(
+      `wrangler kv key put --namespace-id="${kvNamespaceId}" --account-id="${accountId}" "${kvKey}" '${JSON.stringify(canonicalPageMap)}'`,
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     )
-
-    if (putRes.ok) {
-      console.log(`🗺️  Sitemap KV updated: ${slug} → ${notionPageId}`)
-    } else {
-      console.warn(`⚠ Sitemap KV update failed: ${putRes.status}`)
-    }
+    console.log(`🗺️  Sitemap KV updated: ${slug} → ${notionPageId}`)
   } catch (err) {
     console.warn(
       `⚠ Sitemap KV update error: ${err instanceof Error ? err.message : err}`
