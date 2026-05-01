@@ -206,7 +206,37 @@ export async function findExistingPublicPage(
     )
     if (!res.ok) return null
     const data = (await res.json()) as { results: Array<{ id: string }> }
-    return data.results[0]?.id ?? null
+    const pageId = data.results[0]?.id
+    if (!pageId) return null
+
+    // Check if the page has actual content — archive and regen if empty
+    const blocksRes = await fetch(
+      `https://api.notion.com/v1/blocks/${pageId}/children?page_size=5`,
+      {
+        headers: {
+          Authorization: `Bearer ${config.notionApiKey}`,
+          'Notion-Version': '2022-06-28'
+        }
+      }
+    )
+    if (blocksRes.ok) {
+      const blocks = (await blocksRes.json()) as { results: unknown[] }
+      if (blocks.results.length <= 1) {
+        console.log(`🗑️  Empty page "${slug}" (${pageId}), archiving for regen...`)
+        await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${config.notionApiKey}`,
+            'Notion-Version': '2022-06-28',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ archived: true })
+        })
+        return null
+      }
+    }
+
+    return pageId
   } catch {
     return null
   }
@@ -270,20 +300,13 @@ async function updateSitemapKV(
 ): Promise<void> {
   const kvNamespaceId = '7249cd7e8dca4af2bf19a2b5e76392a8'
   const kvKey = 'sitemap:canonicalPageMap'
-  const accountId =
-    process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID
-
-  if (!accountId) {
-    console.log('⚠ No Cloudflare account ID — skipping sitemap KV update')
-    return
-  }
 
   try {
     // Read current map via wrangler
     let canonicalPageMap: Record<string, string> = {}
     try {
       const current = execSync(
-        `wrangler kv key get --remote --namespace-id="${kvNamespaceId}" --account-id="${accountId}" "${kvKey}"`,
+        `wrangler kv key get --remote --namespace-id="${kvNamespaceId}" "${kvKey}"`,
         { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
       ).trim()
       if (current) canonicalPageMap = JSON.parse(current) as Record<string, string>
@@ -294,7 +317,7 @@ async function updateSitemapKV(
     // Add new entry and write back
     canonicalPageMap[slug] = notionPageId
     execSync(
-      `wrangler kv key put --remote --namespace-id="${kvNamespaceId}" --account-id="${accountId}" "${kvKey}" '${JSON.stringify(canonicalPageMap)}'`,
+      `wrangler kv key put --remote --namespace-id="${kvNamespaceId}" "${kvKey}" '${JSON.stringify(canonicalPageMap)}'`,
       { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     )
     console.log(`🗺️  Sitemap KV updated: ${slug} → ${notionPageId}`)
