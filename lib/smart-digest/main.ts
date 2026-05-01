@@ -99,6 +99,13 @@ async function runPipeline(
     return
   }
 
+  // Guard: don't publish empty fallback pages (writer JSON parse failed)
+  const parsedBlocks = JSON.parse(post.content) as unknown[]
+  if (parsedBlocks.length === 0) {
+    console.log('⚠ Skipping publish: writer produced no blocks (fallback). Will retry next run.')
+    return
+  }
+
   // Step 5: Publish to Notion
   console.log('\n📤 Publishing to Notion...')
   const pageId = await publishToNotion(config, post)
