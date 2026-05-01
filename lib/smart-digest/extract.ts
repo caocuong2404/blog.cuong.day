@@ -53,7 +53,7 @@ export async function extractEntities(
           { role: 'system', content: EXTRACT_PROMPT },
           { role: 'user', content: truncated }
         ],
-        { temperature: 0.3 }
+        { temperature: 0.3, maxTokens: 8192 }
       )
 
       const cleaned = response
