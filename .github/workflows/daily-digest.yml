@@ -7,14 +7,18 @@ on:
   workflow_dispatch:
     inputs:
       date:
-        description: 'Override date (YYYY-MM-DD). Leave empty for today.'
+        description: 'Override date (YYYY-MM-DD). Leave empty for backfill mode.'
         required: false
+      backfill_days:
+        description: 'Backfill: how many past days to check (default 30, ignored if date is set).'
+        required: false
+        default: '30'
 
 jobs:
   digest:
     name: Generate Daily Digest
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 90
 
     steps:
       - uses: actions/checkout@v4
@@ -46,12 +50,18 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           DATE="${{ github.event.inputs.date }}"
+          BACKFILL_DAYS="${{ github.event.inputs.backfill_days }}"
+          BACKFILL_DAYS="${BACKFILL_DAYS:-30}"
           if [ -z "$DATE" ]; then
-            DATE=$(date -u +%Y-%m-%d)
+            # Scheduled/backfill run: check last N days to recover from LLM outages
+            echo "DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
+            echo "🔄 Backfill mode: checking last ${BACKFILL_DAYS} days for missed digests"
+            npx tsx lib/smart-digest/main.ts --backfill="${BACKFILL_DAYS}"
+          else
+            echo "DATE=$DATE" >> "$GITHUB_ENV"
+            echo "📅 Generating digest for $DATE"
+            npx tsx lib/smart-digest/main.ts "$DATE"
           fi
-          echo "DATE=$DATE" >> "$GITHUB_ENV"
-          echo "📅 Generating digest for $DATE"
-          npx tsx lib/smart-digest/main.ts "$DATE"
 
       - name: Collect cover images
         if: always()

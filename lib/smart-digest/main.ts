@@ -118,19 +118,49 @@ async function runPipeline(
   console.log('\n✅ Done!')
 }
 
+function getDateRange(days: number): string[] {
+  const dates: string[] = []
+  const now = new Date()
+  for (let i = days; i >= 0; i--) {
+    const d = new Date(now)
+    d.setUTCDate(d.getUTCDate() - i)
+    dates.push(d.toISOString().split('T')[0]!)
+  }
+  return dates
+}
+
 async function main() {
   const args = process.argv.slice(2)
   const dateArg = args.find((a) => /^\d{4}-\d{2}-\d{2}$/.test(a))
   const dryRun = args.includes('--dry-run')
   const skipPublish = args.includes('--skip-publish')
+  const backfillArg = args.find((a) => a.startsWith('--backfill'))
+  const backfillDays = backfillArg
+    ? parseInt(backfillArg.split('=')[1] ?? '7', 10)
+    : 0
 
   console.log('🚀 Smart Digest Pipeline')
   console.log('========================\n')
 
   const config = await loadConfig()
-  const today = dateArg ?? new Date().toISOString().split('T')[0]!
 
-  await runPipeline(config, today, dryRun, skipPublish)
+  if (dateArg) {
+    // Explicit date: run exactly that date
+    await runPipeline(config, dateArg, dryRun, skipPublish)
+  } else if (backfillDays > 0) {
+    // Backfill mode: check last N days and generate any missing ones
+    const dates = getDateRange(backfillDays)
+    console.log(
+      `🔄 Backfill mode: checking ${dates.length} dates (last ${backfillDays} days + today)\n`
+    )
+    for (const date of dates) {
+      await runPipeline(config, date, dryRun, skipPublish)
+    }
+  } else {
+    // Default: today only
+    const today = new Date().toISOString().split('T')[0]!
+    await runPipeline(config, today, dryRun, skipPublish)
+  }
 }
 
 main().catch((err) => {
