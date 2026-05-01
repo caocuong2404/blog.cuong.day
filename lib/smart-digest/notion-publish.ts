@@ -283,7 +283,7 @@ async function updateSitemapKV(
     let canonicalPageMap: Record<string, string> = {}
     try {
       const current = execSync(
-        `wrangler kv key get --namespace-id="${kvNamespaceId}" --account-id="${accountId}" "${kvKey}"`,
+        `wrangler kv key get --remote --namespace-id="${kvNamespaceId}" --account-id="${accountId}" "${kvKey}"`,
         { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
       ).trim()
       if (current) canonicalPageMap = JSON.parse(current) as Record<string, string>
@@ -294,7 +294,7 @@ async function updateSitemapKV(
     // Add new entry and write back
     canonicalPageMap[slug] = notionPageId
     execSync(
-      `wrangler kv key put --namespace-id="${kvNamespaceId}" --account-id="${accountId}" "${kvKey}" '${JSON.stringify(canonicalPageMap)}'`,
+      `wrangler kv key put --remote --namespace-id="${kvNamespaceId}" --account-id="${accountId}" "${kvKey}" '${JSON.stringify(canonicalPageMap)}'`,
       { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     )
     console.log(`🗺️  Sitemap KV updated: ${slug} → ${notionPageId}`)
