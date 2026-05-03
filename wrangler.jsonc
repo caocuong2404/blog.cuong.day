@@ -5,7 +5,7 @@
   "compatibility_date": "2025-06-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "build": {
-    "command": "opennextjs-cloudflare build",
+    "command": "tsx scripts/generate-sitemap-fallback.ts && opennextjs-cloudflare build",
     "watch_dir": ["pages", "components", "lib", "styles"]
   },
   "observability": {

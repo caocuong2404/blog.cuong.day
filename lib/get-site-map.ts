@@ -2,6 +2,7 @@ import {
   getAllPagesInSpace,
   getBlockValue,
   getPageProperty,
+  normalizeTitle,
   uuidToId
 } from 'notion-utils'
 
@@ -18,6 +19,28 @@ const KV_KEY = 'sitemap:canonicalPageMap'
 const KV_TTL = process.env.SITEMAP_KV_TTL
   ? parseInt(process.env.SITEMAP_KV_TTL)
   : undefined
+
+const defaultDigestDatabaseId = '3399bc44a67b80278628c06528b48558'
+const defaultBlogDatabaseId = 'fff9bc44a67b8185a461f62cad7fc444'
+
+type NotionDatabasePage = {
+  id: string
+  properties: Record<string, any>
+}
+
+function getSlugDatabaseIds(): string[] {
+  return [
+    process.env.DIGEST_DATABASE_ID,
+    defaultDigestDatabaseId,
+    process.env.BLOG_DATABASE_ID,
+    defaultBlogDatabaseId
+  ]
+    .filter(Boolean)
+    .filter(
+      (databaseId, index, databaseIds) =>
+        databaseIds.indexOf(databaseId) === index
+    ) as string[]
+}
 
 // ── L1 hot cache (Cache API — per-colo, persists across isolates) ────────────
 
@@ -151,18 +174,17 @@ export async function getSiteMap(): Promise<types.SiteMap> {
  * Try to resolve a single slug by querying Notion databases directly (1 API call per DB)
  * instead of doing a full space crawl. Returns the Notion page ID or null.
  *
- * Only works for databases with a custom "Slug" property.
- * Pages where the slug is derived from the title won't be found here —
- * those fall through to KV / static fallback / full crawl.
+ * Explicit "Slug" values are queried first. If no explicit slug matches, the
+ * public database rows are scanned and compared against Notion's normalized
+ * title slug behavior.
  */
 export async function resolveSlugDirect(slug: string): Promise<string | null> {
-  const notionApiKey = process.env.NOTION_API_KEY
+  const notionApiKey =
+    process.env.NOTION_API_KEY || process.env.NOTION_API_TOKEN
   if (!notionApiKey) return null
 
   // All databases that have a "Slug" property
-  const databaseIds = [process.env.DIGEST_DATABASE_ID].filter(
-    Boolean
-  ) as string[]
+  const databaseIds = getSlugDatabaseIds()
 
   if (databaseIds.length === 0) return null
 
@@ -202,6 +224,13 @@ export async function resolveSlugDirect(slug: string): Promise<string | null> {
         await kvAppendSlug(slug, cleanId)
         return cleanId
       }
+
+      const titleSlugPageId = await resolveTitleSlugInDatabase(
+        databaseId,
+        slug,
+        notionApiKey
+      )
+      if (titleSlugPageId) return titleSlugPageId
     } catch (err) {
       console.warn(
         `getSiteMap: direct slug lookup failed for ${databaseId}: ${err}`
@@ -210,6 +239,65 @@ export async function resolveSlugDirect(slug: string): Promise<string | null> {
   }
 
   return null
+}
+
+async function resolveTitleSlugInDatabase(
+  databaseId: string,
+  slug: string,
+  notionApiKey: string
+): Promise<string | null> {
+  let cursor: string | undefined
+
+  do {
+    const res = await fetch(
+      `https://api.notion.com/v1/databases/${databaseId}/query`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${notionApiKey}`,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filter: { property: 'Public', checkbox: { equals: true } },
+          page_size: 100,
+          ...(cursor ? { start_cursor: cursor } : {})
+        })
+      }
+    )
+
+    if (!res.ok) return null
+
+    const data = (await res.json()) as {
+      results: NotionDatabasePage[]
+      has_more: boolean
+      next_cursor: string | null
+    }
+
+    for (const page of data.results) {
+      const titleSlug = normalizeTitle(getRestPageTitle(page))
+      if (titleSlug === slug) {
+        const cleanId = page.id.replace(/-/g, '')
+        console.log(`getSiteMap: title slug lookup hit: ${slug} → ${cleanId}`)
+        await kvAppendSlug(slug, cleanId)
+        return cleanId
+      }
+    }
+
+    cursor = data.has_more ? (data.next_cursor ?? undefined) : undefined
+  } while (cursor)
+
+  return null
+}
+
+function getRestPageTitle(page: NotionDatabasePage): string {
+  const titleProperty = Object.values(page.properties).find(
+    (property) => property?.type === 'title'
+  )
+
+  return (
+    titleProperty?.title?.map((part: any) => part.plain_text).join('') ?? ''
+  )
 }
 
 // ── Full Notion crawl (last resort) ─────────────────────────────────────────
