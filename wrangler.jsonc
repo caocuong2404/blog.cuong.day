@@ -3,23 +3,18 @@
   "main": ".open-next/worker.js",
   "name": "blog-cuong-day",
   "compatibility_date": "2025-06-01",
-  "compatibility_flags": [
-    "nodejs_compat",
-    "global_fetch_strictly_public"
-  ],
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "build": {
     "command": "opennextjs-cloudflare build",
-    "watch_dir": [
-      "pages",
-      "components",
-      "lib",
-      "styles"
-    ]
+    "watch_dir": ["pages", "components", "lib", "styles"]
   },
   "observability": {
     "logs": {
       "enabled": true,
       "invocation_logs": true
+    },
+    "traces": {
+      "enabled": true
     }
   },
   "assets": {
